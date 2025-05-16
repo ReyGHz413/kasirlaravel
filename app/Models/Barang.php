@@ -12,8 +12,8 @@ class Barang extends Model
         'harga',
     ];
 
-    public function barang()
+    public function notas()
     {
-        return $this->belongsTo(Tranksaksi::class, 'id_barang');
+        return $this->hasMany(Nota::class);
     }
 }

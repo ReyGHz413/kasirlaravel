@@ -7,20 +7,20 @@ use Illuminate\Http\Request;
 
 class BarangController extends Controller
 {
-    // Menampilkan semua siswa
+    // Menampilkan semua barang
   public function index()
   {
     $barang = Barang::all();
     return view('barang.index', compact('barang'));
   }
 
-  // Menampilkan form tambah siswa
+  // Menampilkan form tambah barang
   public function create()
   {
     return view('barang.create');
   }
 
-  // Menyimpan siswa baru
+  // Menyimpan data barang baru
   public function store(Request $request)
   {
     $request->validate([
@@ -35,7 +35,7 @@ class BarangController extends Controller
   }
 
 
-  // Menampilkan form edit siswa
+  // Menampilkan form edit barang
   public function edit($id)
   {
     $barang = Barang::findOrFail($id);
@@ -43,7 +43,7 @@ class BarangController extends Controller
   }
 
 
-  // Menyimpan perubahan data siswa
+  // Menyimpan perubahan data barang
   public function update(Request $request, $id)
   {
     $request->validate([
@@ -59,7 +59,7 @@ class BarangController extends Controller
   }
 
 
-  // Menghapus siswa
+  // Menghapus barang
   public function destroy($id)
   {
     Barang::destroy($id);

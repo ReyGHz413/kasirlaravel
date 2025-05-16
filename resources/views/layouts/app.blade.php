@@ -24,11 +24,18 @@
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav ms-auto">
-          <li class="nav-item">
-            <a class="nav-link" href="{{ route('barang.index') }}">Daftar Barang</a>
-          </li>
-        </ul>
+      <ul class="navbar-nav ms-auto">
+    <li class="nav-item">
+        <a class="nav-link" href="{{ route('barang.index') }}">Daftar Barang</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{{ route('pembelian.create') }}">Form Pembelian</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{{ route('nota.index') }}">Histori Nota</a>
+    </li>
+</ul>
+
       </div>
     </div>
   </nav>

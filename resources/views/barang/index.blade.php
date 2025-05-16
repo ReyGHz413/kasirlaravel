@@ -26,7 +26,7 @@
           <tr>
             <td>{{ $b->namabarang }}</td>
             <td>{{ $b->stok }}</td>
-            <td>{{ $b->harga }}</td>
+            <td>{{ number_format($b->harga, 0, ',', '.') }}</td>
             <td>
               <a href="{{ route('barang.edit', $b->id) }}" class="btn btn-warning btn-sm">Edit</a>
               <form action="{{ route('barang.destroy', $b->id) }}" method="POST" style="display:inline;">
