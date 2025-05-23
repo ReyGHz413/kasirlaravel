@@ -17,8 +17,7 @@
             <thead>
                 <tr>
                     <th>ID Nota</th>
-                    <th>Nama Barang</th>
-                    <th>Jumlah</th>
+                    <th>Jumlah Item</th>
                     <th>Tanggal Pembelian</th>
                     <th>Total Pembelian (Rp)</th>
                     <th>Aksi</th>
@@ -28,8 +27,7 @@
                 @foreach($notas as $nota)
                     <tr>
                         <td>{{ $nota->id }}</td>
-                        <td>{{ $nota->barang->namabarang }}</td>
-                        <td>{{ $nota->jumlah }}</td>
+                        <td>{{ $nota->detailnota->count() }}</td>
                         <td>{{ $nota->tanggal_pembelian }}</td>
                         <td>{{ number_format($nota->total_pembelian, 0, ',', '.') }}</td>
                         <td>

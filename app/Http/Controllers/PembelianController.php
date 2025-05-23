@@ -5,6 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Nota;
 use App\Models\Barang;
 use Illuminate\Http\Request;
+use App\Models\DetailNota; // Tambahkan ini di atas
+use Illuminate\Support\Facades\DB; // Untuk transaksi DB
+use Barryvdh\DomPDF\Facade\Pdf; // Tambahkan di atas
+
 
 class PembelianController extends Controller
 {
@@ -17,47 +21,80 @@ class PembelianController extends Controller
 
     // Menyimpan transaksi pembelian
     public function store(Request $request)
-    {
-        $request->validate([
-            'barang_id' => 'required|exists:barangs,id',
-            'jumlah' => 'required|integer|min:1',
-            'diskon' => 'required|numeric|min:1|max:100',
+{
+    $request->validate([
+        'barang_id' => 'required|array',
+        'jumlah' => 'required|array',
+        'diskon' => 'required|array',
+        'barang_id.*' => 'required|exists:barangs,id',
+        'jumlah.*' => 'required|integer|min:1',
+        'diskon.*' => 'required|numeric|min:0|max:100',
+    ]);
+
+    DB::beginTransaction();
+
+    try {
+        $totalPembelian = 0;
+        $totalKeuntungan = 0;
+
+        // Simpan nota kosong dulu
+        $nota = Nota::create([
+            'tanggal_pembelian' => now()->toDateString(),
+            'total_pembelian' => 0,
+            'keuntungan' => 0,
         ]);
 
-        // Ambil data barang
-        $barang = Barang::findOrFail($request->barang_id);
+        // Loop semua barang yang dibeli
+        foreach ($request->barang_id as $index => $barangId) {
+            $barang = Barang::findOrFail($barangId);
+            $jumlah = $request->jumlah[$index];
+            $diskon = $request->diskon[$index];
 
-        // Cek stok barang
-        if ($request->jumlah > $barang->stok) {
-            return redirect()->back()->with('error', 'Stok tidak cukup. Tersedia: ' . $barang->stok);
+            if ($jumlah > $barang->stok) {
+                DB::rollBack();
+                return redirect()->back()->with('error', 'Stok tidak cukup untuk barang: ' . $barang->namabarang);
+            }
+
+            $hargaAsli = $barang->harga;
+            $hargaDiskonPerBarang = $hargaAsli * ($diskon / 100);
+            $hargaSetelahDiskon = $hargaAsli - $hargaDiskonPerBarang;
+            $subtotal = $hargaSetelahDiskon * $jumlah;
+            $keuntungan = $hargaDiskonPerBarang * $jumlah;
+
+            // Simpan ke detail nota
+            DetailNota::create([
+                'nota_id' => $nota->id,
+                'barang_id' => $barang->id,
+                'jumlah' => $jumlah,
+                'diskon' => $diskon,
+                'harga_asli' => $hargaAsli,
+                'harga_diskon' => $hargaDiskonPerBarang,
+                'subtotal' => $subtotal,
+            ]);
+
+            // Kurangi stok barang
+            $barang->stok -= $jumlah;
+            $barang->save();
+
+            // Akumulasi total
+            $totalPembelian += $subtotal;
+            $totalKeuntungan += $keuntungan;
         }
 
-        // Hitung harga setelah diskon
-        $harga_asli = (int) $barang->harga;
-        $diskon_persen = (float) $request->diskon;
-        $harga_diskon_per_barang = $harga_asli * ($diskon_persen / 100);
-        $harga_setelah_diskon = $harga_asli - $harga_diskon_per_barang;
-        $total_harga = $harga_setelah_diskon * $request->jumlah;
-        $keuntungan = $harga_diskon_per_barang * $request->jumlah;
-
-        // Simpan Nota
-        Nota::create([
-            'barang_id' => $barang->id,
-            'jumlah' => $request->jumlah,
-            'nominal_diskon' => $diskon_persen,
-            'harga_asli' => $harga_asli,
-            'harga_diskon' => $harga_diskon_per_barang,
-            'total_pembelian' => $total_harga,
-            'keuntungan' => $keuntungan,
-            'tanggal_pembelian' => now()->toDateString(),
+        // Update total dan keuntungan di nota
+        $nota->update([
+            'total_pembelian' => $totalPembelian,
+            'keuntungan' => $totalKeuntungan,
         ]);
 
-        // Kurangi stok barang
-        $barang->stok -= $request->jumlah;
-        $barang->save();
+        DB::commit();
 
         return redirect()->route('nota.index')->with('success', 'Nota berhasil dibuat.');
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return redirect()->back()->with('error', 'Gagal menyimpan: ' . $e->getMessage());
     }
+}
 
     // Menampilkan semua nota
     public function index()
@@ -69,9 +106,17 @@ class PembelianController extends Controller
     // Menampilkan detail nota
     public function show($id)
     {
-        $nota = Nota::with('barang')->findOrFail($id);
+        $nota = Nota::with('detailnota.barang')->findOrFail($id);
         return view('nota.show', compact('nota'));
     }
+
+    public function cetak($id)
+{
+    $nota = Nota::with('detailnota.barang')->findOrFail($id);
+
+    $pdf = Pdf::loadView('nota.cetak', compact('nota'));
+    return $pdf->stream('nota-pembelian-'.$nota->id.'.pdf');
+}
     public function update(Request $request, $id)
 {
     $request->validate([

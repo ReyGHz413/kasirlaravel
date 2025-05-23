@@ -21,6 +21,10 @@
         <label>Harga Barang</label>
         <input type="text" name="harga" class="form-control" value="{{ $barang->harga }}" required>
       </div>
+      <div class="form-group">
+    <label for="diskon">Diskon (%)</label>
+    <input type="number" name="diskon" id="diskon" step="0.01" class="form-control" value="{{ old('diskon', $barang->diskon ?? 0) }}">
+</div>
       <button type="submit" class="btn btn-success">Update</button>
     </form>
   </div>

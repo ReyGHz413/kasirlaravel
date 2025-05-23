@@ -18,4 +18,5 @@ Route::get('/pembelian', [PembelianController::class, 'create'])->name('pembelia
 Route::post('/pembelian', [PembelianController::class, 'store'])->name('pembelian.store');
 Route::get('/nota', [PembelianController::class, 'index'])->name('nota.index');
 Route::get('/nota/{id}', [PembelianController::class, 'show'])->name('nota.show');
+Route::get('/nota/{id}/cetak', [\App\Http\Controllers\PembelianController::class, 'cetak'])->name('nota.cetak');
 

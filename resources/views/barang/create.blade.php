@@ -12,12 +12,16 @@
       </div>
       <div class="mb-3">
         <label>Stok</label>
-        <input type="number" name="stok" class="form-control" required>
+        <input type="number" name="stok" class="form-control" min="0" required>
       </div>
       <div class="mb-3">
         <label>Harga</label>
         <input type="text" name="harga" class="form-control" required>
       </div>
+      <div class="form-group">
+    <label for="diskon">Diskon (%)</label>
+    <input type="number" name="diskon" id="diskon" step="0.01" class="form-control" value="{{ old('diskon', $barang->diskon ?? 0) }}">
+</div>
       <button type="submit" class="btn btn-success">Simpan</button>
     </form>
   </div>

@@ -13,39 +13,48 @@
     <form action="{{ route('pembelian.store') }}" method="POST">
         @csrf
 
-        <div class="mb-3">
-            <label>Nama Barang</label>
-            <select name="barang_id" id="barang_id" class="form-select" required>
-                <option value="">Pilih Barang</option>
-                @foreach($barangs as $barang)
-                    <option value="{{ $barang->id }}" 
-                            data-harga="{{ $barang->harga }}" 
-                            data-stok="{{ $barang->stok }}">
-                        {{ $barang->namabarang }}
-                    </option>
-                @endforeach
-            </select>
+        <div id="barang-container">
+            <div class="barang-row row mb-3">
+                <div class="col-md-3">
+                    <label>Nama Barang</label>
+                    <select name="barang_id[]" class="form-select barang-select" required>
+                        <option value="">Pilih Barang</option>
+                        @foreach($barangs as $barang)
+                            <option value="{{ $barang->id }}" 
+                                    data-harga="{{ $barang->harga }}" 
+                                    data-stok="{{ $barang->stok }}">
+                                {{ $barang->namabarang }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label>Harga (Rp)</label>
+                    <input type="text" class="form-control harga-barang" readonly>
+                </div>
+                <div class="col-md-2">
+                    <label>Stok</label>
+                    <input type="text" class="form-control stok-barang" readonly>
+                </div>
+                <div class="col-md-1">
+                    <label>Jumlah</label>
+                    <input type="number" name="jumlah[]" class="form-control jumlah-barang" min="1" required>
+                </div>
+                <div class="col-md-2">
+                    <label>Diskon (%)</label>
+                    <input type="number" name="diskon[]" class="form-control diskon-barang" min="1" max="100" required>
+                </div>
+                <div class="col-md-2">
+                    <label>Subtotal (Rp)</label>
+                    <input type="text" class="form-control subtotal-barang" readonly>
+                </div>
+                <div class="col-md-12 mt-2">
+                    <button type="button" class="btn btn-danger btn-sm remove-barang">Hapus</button>
+                </div>
+            </div>
         </div>
 
-        <div class="mb-3">
-            <label>Harga Barang (Rp)</label>
-            <input type="text" id="harga_barang" class="form-control" readonly>
-        </div>
-
-        <div class="mb-3">
-            <label>Stok Tersedia</label>
-            <input type="text" id="stok_barang" class="form-control" readonly>
-        </div>
-
-        <div class="mb-3">
-            <label>Jumlah</label>
-            <input type="number" name="jumlah" id="jumlah" class="form-control" min="1" required>
-        </div>
-
-        <div class="mb-3">
-            <label>Diskon (%)</label>
-            <input type="number" name="diskon" id="diskon" class="form-control" min="1" max="100" required>
-        </div>
+        <button type="button" id="add-barang" class="btn btn-success mb-3">Tambah Barang</button>
 
         <div class="mb-3">
             <label>Total Pembelian (Rp)</label>
@@ -57,39 +66,64 @@
 </div>
 
 <script>
-    function updateTotal() {
-        const harga = parseInt(document.getElementById('harga_barang').value || 0);
-        const jumlah = parseInt(document.getElementById('jumlah').value || 0);
-        const diskon = parseFloat(document.getElementById('diskon').value || 0);
-        const stok = parseInt(document.getElementById('stok_barang').value || 0);
+    function updateSubtotal(row) {
+        const harga = parseInt(row.querySelector('.harga-barang').value || 0);
+        const jumlah = parseInt(row.querySelector('.jumlah-barang').value || 0);
+        const diskon = parseFloat(row.querySelector('.diskon-barang').value || 0);
+        const stok = parseInt(row.querySelector('.stok-barang').value || 0);
 
         if (jumlah > stok) {
             alert('Jumlah melebihi stok yang tersedia.');
-            document.getElementById('jumlah').value = stok;
+            row.querySelector('.jumlah-barang').value = stok;
             return;
         }
 
-        const hargaDiskonPerItem = harga * (diskon / 100);
-        const hargaSetelahDiskon = harga - hargaDiskonPerItem;
-        const total = hargaSetelahDiskon * jumlah;
-        
+        const hargaSetelahDiskon = harga - (harga * (diskon / 100));
+        const subtotal = hargaSetelahDiskon * jumlah;
+        row.querySelector('.subtotal-barang').value = subtotal.toLocaleString('id-ID');
+
+        updateTotal();
+    }
+
+    function updateTotal() {
+        let total = 0;
+        document.querySelectorAll('.subtotal-barang').forEach(input => {
+            total += parseInt(input.value.replace(/\D/g, '') || 0);
+        });
         document.getElementById('total_pembelian').value = total.toLocaleString('id-ID');
     }
 
-    // Update harga dan stok saat barang dipilih
-    document.getElementById('barang_id').addEventListener('change', function() {
-        const selectedBarang = this.options[this.selectedIndex];
-        const harga = selectedBarang.getAttribute('data-harga') || '';
-        const stok = selectedBarang.getAttribute('data-stok') || '';
+    function bindEvents(row) {
+        row.querySelector('.barang-select').addEventListener('change', function() {
+            const selected = this.options[this.selectedIndex];
+            row.querySelector('.harga-barang').value = selected.getAttribute('data-harga') || '';
+            row.querySelector('.stok-barang').value = selected.getAttribute('data-stok') || '';
+            updateSubtotal(row);
+        });
 
-        document.getElementById('harga_barang').value = harga;
-        document.getElementById('stok_barang').value = stok;
+        row.querySelector('.jumlah-barang').addEventListener('input', () => updateSubtotal(row));
+        row.querySelector('.diskon-barang').addEventListener('input', () => updateSubtotal(row));
 
-        updateTotal();
+        row.querySelector('.remove-barang').addEventListener('click', function () {
+            row.remove();
+            updateTotal();
+        });
+    }
+
+    document.getElementById('add-barang').addEventListener('click', function () {
+        const container = document.getElementById('barang-container');
+        const original = container.querySelector('.barang-row');
+        const clone = original.cloneNode(true);
+
+        clone.querySelectorAll('input').forEach(input => {
+            input.value = '';
+        });
+        clone.querySelector('.barang-select').value = '';
+        bindEvents(clone);
+
+        container.appendChild(clone);
     });
 
-    // Hitung total saat jumlah atau diskon diubah
-    document.getElementById('jumlah').addEventListener('input', updateTotal);
-    document.getElementById('diskon').addEventListener('input', updateTotal);
+    document.querySelectorAll('.barang-row').forEach(bindEvents);
 </script>
 @endsection
